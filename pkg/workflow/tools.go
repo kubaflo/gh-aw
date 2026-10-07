@@ -556,27 +556,7 @@ func (c *Compiler) applyDefaultTools(tools map[string]any, safeOutputs *SafeOutp
 			githubConfig = make(map[string]any)
 		}
 
-		// Parse the existing GitHub tool configuration for type safety
-		parsedConfig := parseGitHubTool(githubTool)
-
-		// Create a set of existing tools for efficient lookup
-		existingToolsSet := make(map[string]struct{})
-		if parsedConfig != nil {
-			for _, tool := range parsedConfig.Allowed {
-				existingToolsSet[string(tool)] = struct{}{}
-			}
-		}
-
-		// Only set allowed tools if explicitly configured
-		// Don't add default tools - let the MCP server use all available tools
-		if len(existingToolsSet) > 0 {
-			// Convert back to []any for the map
-			existingAllowed := make([]any, 0, len(parsedConfig.Allowed))
-			for _, tool := range parsedConfig.Allowed {
-				existingAllowed = append(existingAllowed, string(tool))
-			}
-			githubConfig["allowed"] = existingAllowed
-		}
+		// Keep raw allowed entries: the typed parser retains names but discards call limits.
 		tools["github"] = githubConfig
 	}
 
