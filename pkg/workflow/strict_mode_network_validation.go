@@ -9,6 +9,8 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+
+	"github.com/github/gh-aw/pkg/constants"
 )
 
 // validateStrictNetwork validates network configuration in strict mode and refuses "*" wildcard
@@ -230,6 +232,9 @@ func validatePrivateToPublicFlowsServerIDs(workflowData *WorkflowData) error {
 	validIDs := make(map[string]struct{}, len(workflowData.Tools))
 	for id := range workflowData.Tools {
 		validIDs[id] = struct{}{}
+	}
+	if HasSafeOutputsEnabled(workflowData.SafeOutputs) {
+		validIDs[constants.SafeOutputsMCPServerID.String()] = struct{}{}
 	}
 	var unknown []string
 	for _, id := range servers {

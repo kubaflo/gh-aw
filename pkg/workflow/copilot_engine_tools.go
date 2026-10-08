@@ -142,7 +142,7 @@ func (e *CopilotEngine) computeCopilotToolArguments(tools map[string]any, safeOu
 
 	// Handle edit tools requirement for file write access
 	// Note: safe-outputs do not need write permission as they use MCP
-	if _, hasEdit := tools["edit"]; hasEdit {
+	if editTool, hasEdit := tools["edit"]; hasEdit && !isExplicitlyDisabledTool(editTool) {
 		copilotEngineToolsLog.Print("Edit tool enabled, adding write permission")
 		args = append(args, "--allow-tool", "write")
 	}

@@ -120,7 +120,7 @@ func (r *MCPConfigRendererUnified) renderSafeOutputsTOML(yaml *strings.Builder, 
 
 	// Check if GitHub tool has guard-policies configured (or auto-lockdown will run)
 	// If so, generate a linked write-sink guard-policy for safeoutputs
-	guardPolicies := deriveWriteSinkGuardPolicyFromWorkflow(workflowData)
+	guardPolicies := deriveSafeOutputsGuardPolicyFromWorkflow(workflowData)
 	if len(guardPolicies) > 0 {
 		mcpRendererLog.Print("Adding guard-policies to safeoutputs TOML (derived from GitHub guard-policy or auto-lockdown detection)")
 		// Render guard-policies in TOML format
@@ -325,7 +325,7 @@ func renderSafeOutputsMCPConfigWithOptions(yaml *strings.Builder, isLast bool, i
 
 	// Check if GitHub tool has guard-policies configured (or auto-lockdown will run)
 	// If so, generate a linked write-sink guard-policy for safeoutputs
-	guardPolicies := deriveWriteSinkGuardPolicyFromWorkflow(workflowData)
+	guardPolicies := deriveSafeOutputsGuardPolicyFromWorkflow(workflowData)
 
 	// Add guard-policies if configured
 	if len(guardPolicies) > 0 {

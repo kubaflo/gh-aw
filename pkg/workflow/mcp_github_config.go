@@ -63,6 +63,7 @@ package workflow
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -594,6 +595,20 @@ func deriveWriteSinkGuardPolicyFromWorkflow(workflowData *WorkflowData) map[stri
 	}
 
 	return nil
+}
+
+func deriveSafeOutputsGuardPolicyFromWorkflow(workflowData *WorkflowData) map[string]any {
+	policy := deriveWriteSinkGuardPolicyFromWorkflow(workflowData)
+	if policy == nil || workflowData.ParsedTools == nil || workflowData.ParsedTools.GitHub == nil {
+		return policy
+	}
+	exemptServers, ok := workflowData.ParsedTools.GitHub.PrivateToPublicFlows.([]string)
+	if ok && slices.Contains(exemptServers, constants.SafeOutputsMCPServerID.String()) {
+		if writeSink, ok := policy["write-sink"].(map[string]any); ok {
+			delete(writeSink, "sink-visibility")
+		}
+	}
+	return policy
 }
 
 func getGitHubDockerImageVersion(githubTool map[string]any) string {
