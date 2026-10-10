@@ -31,7 +31,7 @@ func renderCustomMCPConfigWrapperWithContext(yaml *strings.Builder, toolName str
 		IndentLevel:              "                ",
 		Format:                   "json",
 		RewriteLocalhostToDocker: rewriteLocalhost,
-		GuardPolicies:            deriveWriteSinkGuardPolicyFromWorkflow(workflowData),
+		GuardPolicies:            deriveWriteSinkGuardPolicyForServer(workflowData, toolName),
 		ContainerPinMappings:     workflowData.getContainerPinMappings(),
 	}
 

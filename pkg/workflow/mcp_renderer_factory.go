@@ -28,6 +28,7 @@ package workflow
 import (
 	"strings"
 
+	"github.com/github/gh-aw/pkg/constants"
 	"github.com/github/gh-aw/pkg/logger"
 )
 
@@ -144,18 +145,18 @@ func renderStandardJSONMCPConfig(
 }
 
 // buildMCPRendererFactory creates a factory function for MCPConfigRendererUnified instances.
-// The returned function accepts isLast as a parameter and creates a renderer with engine-specific
+// The returned function accepts isLast and serverID and creates a renderer with engine-specific
 // options derived from the provided parameters and workflowData at call time.
-func buildMCPRendererFactory(workflowData *WorkflowData, format string, includeCopilotFields, inlineArgs bool) func(bool) *MCPConfigRendererUnified {
+func buildMCPRendererFactory(workflowData *WorkflowData, format string, includeCopilotFields, inlineArgs bool) func(bool, string) *MCPConfigRendererUnified {
 	mcpRenderingLog.Printf("Building MCP renderer factory: format=%s, copilotFields=%t, inlineArgs=%t", format, includeCopilotFields, inlineArgs)
-	return func(isLast bool) *MCPConfigRendererUnified {
+	return func(isLast bool, serverID string) *MCPConfigRendererUnified {
 		return NewMCPConfigRenderer(MCPRendererOptions{
 			IncludeCopilotFields:   includeCopilotFields,
 			InlineArgs:             inlineArgs,
 			Format:                 format,
 			IsLast:                 isLast,
 			ActionMode:             GetActionModeFromWorkflowData(workflowData),
-			WriteSinkGuardPolicies: deriveWriteSinkGuardPolicyFromWorkflow(workflowData),
+			WriteSinkGuardPolicies: deriveWriteSinkGuardPolicyForServer(workflowData, serverID),
 			ContainerPinMappings:   workflowData.getContainerPinMappings(),
 		})
 	}
@@ -171,26 +172,26 @@ func buildMCPRendererFactory(workflowData *WorkflowData, format string, includeC
 // renderCustom is the engine-specific handler for custom MCP tool configuration entries.
 func buildStandardJSONMCPRenderers(
 	workflowData *WorkflowData,
-	createRenderer func(bool) *MCPConfigRendererUnified,
+	createRenderer func(bool, string) *MCPConfigRendererUnified,
 	renderCustom RenderCustomMCPToolConfigHandler,
 ) MCPToolRenderers {
 	mcpRenderingLog.Printf("Building standard JSON MCP renderers")
 	return MCPToolRenderers{
 		RenderGitHub: func(yaml *strings.Builder, githubTool map[string]any, isLast bool, workflowData *WorkflowData) {
-			createRenderer(isLast).RenderGitHubMCP(yaml, githubTool, workflowData)
+			createRenderer(isLast, constants.GitHubMCPServerID.String()).RenderGitHubMCP(yaml, githubTool, workflowData)
 		},
 		RenderPlaywright: func(yaml *strings.Builder, playwrightTool any, isLast bool) {
-			createRenderer(isLast).RenderPlaywrightMCP(yaml, playwrightTool)
+			createRenderer(isLast, "playwright").RenderPlaywrightMCP(yaml, playwrightTool)
 		},
 		RenderCacheMemory: noOpCacheMemoryRenderer,
 		RenderAgenticWorkflows: func(yaml *strings.Builder, isLast bool) {
-			createRenderer(isLast).RenderAgenticWorkflowsMCP(yaml)
+			createRenderer(isLast, constants.AgenticWorkflowsMCPServerID.String()).RenderAgenticWorkflowsMCP(yaml)
 		},
 		RenderSafeOutputs: func(yaml *strings.Builder, isLast bool, workflowData *WorkflowData) {
-			createRenderer(isLast).RenderSafeOutputsMCP(yaml, workflowData)
+			createRenderer(isLast, constants.SafeOutputsMCPServerID.String()).RenderSafeOutputsMCP(yaml, workflowData)
 		},
 		RenderMCPScripts: func(yaml *strings.Builder, mcpScripts *MCPScriptsConfig, isLast bool) {
-			createRenderer(isLast).RenderMCPScriptsMCP(yaml, mcpScripts, workflowData)
+			createRenderer(isLast, constants.MCPScriptsMCPServerID.String()).RenderMCPScriptsMCP(yaml, mcpScripts, workflowData)
 		},
 		RenderCustomMCPConfig: renderCustom,
 	}

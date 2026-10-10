@@ -75,7 +75,7 @@ func (e *CopilotEngine) renderCopilotMCPConfigWithContext(yaml *strings.Builder,
 		IndentLevel:              "                ",
 		RequiresCopilotFields:    true,
 		RewriteLocalhostToDocker: rewriteLocalhost,
-		GuardPolicies:            deriveWriteSinkGuardPolicyFromWorkflow(workflowData),
+		GuardPolicies:            deriveWriteSinkGuardPolicyForServer(workflowData, toolName),
 		ContainerPinMappings:     workflowData.getContainerPinMappings(),
 	}
 

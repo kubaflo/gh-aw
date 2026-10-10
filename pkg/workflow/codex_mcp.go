@@ -25,14 +25,14 @@ func (e *CodexEngine) RenderMCPConfig(yaml *strings.Builder, tools map[string]an
 
 	// Create unified renderer with Codex-specific options
 	// Codex uses TOML format without Copilot-specific fields and multi-line args
-	createRenderer := func(isLast bool) *MCPConfigRendererUnified {
+	createRenderer := func(isLast bool, serverID string) *MCPConfigRendererUnified {
 		return NewMCPConfigRenderer(MCPRendererOptions{
 			IncludeCopilotFields:   false, // Codex doesn't use "type" and "tools" fields
 			InlineArgs:             false, // Codex uses multi-line args format
 			Format:                 "toml",
 			IsLast:                 isLast,
 			ActionMode:             GetActionModeFromWorkflowData(workflowData),
-			WriteSinkGuardPolicies: deriveWriteSinkGuardPolicyFromWorkflow(workflowData),
+			WriteSinkGuardPolicies: deriveWriteSinkGuardPolicyForServer(workflowData, serverID),
 			ContainerPinMappings:   workflowData.getContainerPinMappings(),
 		})
 	}
@@ -54,7 +54,7 @@ func (e *CodexEngine) RenderMCPConfig(yaml *strings.Builder, tools map[string]an
 
 	// Generate [mcp_servers] section
 	for _, toolName := range mcpTools {
-		renderer := createRenderer(false) // isLast is always false in TOML format
+		renderer := createRenderer(false, toolName) // isLast is always false in TOML format
 		switch toolName {
 		case "github":
 			githubTool, _ := expandedTools["github"].(map[string]any)
@@ -63,6 +63,7 @@ func (e *CodexEngine) RenderMCPConfig(yaml *strings.Builder, tools map[string]an
 			playwrightTool := expandedTools["playwright"]
 			renderer.RenderPlaywrightMCP(&mcpConfigContent, playwrightTool)
 		case "agentic-workflows":
+			renderer = createRenderer(false, constants.AgenticWorkflowsMCPServerID.String())
 			renderer.RenderAgenticWorkflowsMCP(&mcpConfigContent)
 		case "safe-outputs":
 			// Add safe-outputs MCP server if safe-outputs are configured
@@ -74,6 +75,7 @@ func (e *CodexEngine) RenderMCPConfig(yaml *strings.Builder, tools map[string]an
 			// Add mcp-scripts MCP server if mcp-scripts are configured and feature flag is enabled
 			hasMCPScripts := workflowData != nil && IsMCPScriptsEnabled(workflowData.MCPScripts)
 			if hasMCPScripts {
+				renderer = createRenderer(false, constants.MCPScriptsMCPServerID.String())
 				renderer.RenderMCPScriptsMCP(&mcpConfigContent, workflowData.MCPScripts, workflowData)
 			}
 		default:
@@ -212,7 +214,7 @@ func (e *CodexEngine) renderCodexMCPConfigWithContext(yaml *strings.Builder, too
 		IndentLevel:              "          ",
 		Format:                   "toml",
 		RewriteLocalhostToDocker: rewriteLocalhost,
-		GuardPolicies:            deriveWriteSinkGuardPolicyFromWorkflow(workflowData),
+		GuardPolicies:            deriveWriteSinkGuardPolicyForServer(workflowData, toolName),
 		ContainerPinMappings:     workflowData.getContainerPinMappings(),
 	}
 
@@ -237,7 +239,7 @@ func (e *CodexEngine) renderCodexJSONMCPConfigWithContext(yaml *strings.Builder,
 		Format:                   "json",
 		IndentLevel:              "              ",
 		RewriteLocalhostToDocker: rewriteLocalhost,
-		GuardPolicies:            deriveWriteSinkGuardPolicyFromWorkflow(workflowData),
+		GuardPolicies:            deriveWriteSinkGuardPolicyForServer(workflowData, toolName),
 		ContainerPinMappings:     workflowData.getContainerPinMappings(),
 	}
 
